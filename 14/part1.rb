@@ -1,50 +1,49 @@
-data = File.readlines('input.txt', chomp: true).map { |row| row.split('') }
+data = File.readlines('input.txt', chomp: true).map { |row| row.split('').map(&:to_sym) }
 
-def tilt_west(data)
+def rotate(data)
+  data.reverse.transpose
+end
+
+def tilt(data)
   data.map do |row|
-    new_row = []
-    row.each_with_index do |cell, index|
-      new_row << cell
+    row_size = row.size
+    new_row = [:'.'] * row_size
+    last_occupied_space = row_size
 
-      if cell == 'O'
-        new_row[index - 1], new_row[index] = new_row[index], new_row[index -= 1] while new_row[index - 1] == '.'
+    row_size.downto(0).each do |x|
+      if row[x] == :'#'
+        new_row[x] = :'#'
+        last_occupied_space = x
+      elsif row[x] == :O
+        new_row[last_occupied_space -= 1] = :O
       end
     end
     new_row
   end
 end
 
-def tilt_north(data)
-  tilt_west(data.transpose).transpose
-end
-
-def tilt_south(data)
-  tilt_west(data.reverse.transpose).transpose.reverse
-end
-
-def tilt_east(data)
-  tilt_west(data.map(&:reverse)).map(&:reverse)
-end
-
-def rotate(data)
-  tilt_east(tilt_south(tilt_west(tilt_north(data))))
+def cycle(data)
+  4.times { data = tilt(rotate(data)) }
+  data
 end
 
 def calculate_load(data)
-  data.map.with_index do |row, index|
-    row.inject(0) { |total_weight, cell| total_weight + (cell == 'O' ? (data.size - index) : 0) }
+  data.map do |row|
+    row.each_with_index.map do |cell, index|
+      cell == :O ? (index + 1) : 0
+    end.sum
   end.sum
 end
 
-puts calculate_load(tilt_north(data))
+puts calculate_load(tilt(rotate(data)))
 
 history = []
 cycle_start_at, cycle_length = 1000000000.times do |current_cycle|
-  data = rotate(data)
+  data = cycle(data)
 
   break [cycle_start_at, (current_cycle - cycle_start_at)] if (cycle_start_at = history.index(data))
 
   history << data
 end
 
-puts calculate_load(history[cycle_start_at + (1000000000 - cycle_start_at) % cycle_length - 1])
+puts calculate_load(rotate(history[cycle_start_at + (1000000000 - cycle_start_at) % cycle_length - 1]))
