@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    parallel (1.24.0)
+
+PLATFORMS
+  arm64-darwin-22
+
+DEPENDENCIES
+  parallel
+
+BUNDLED WITH
+   2.4.22
