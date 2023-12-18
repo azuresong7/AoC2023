@@ -7,4 +7,7 @@ def solve(total_time, record_distance)
   (solution_1.ceil - solution_2.floor) - 1
 end
 
-p solve(59796575, 597123410321328)
+input = File.readlines('input.txt').map { _1.scan(/\d+/).flatten.map(&:to_i) }
+
+p input[0].zip(input[1]).inject(1) { |total, (time, distance)| total * solve(time, distance) }
+p solve(input[0].join.to_i, input[1].join.to_i)
