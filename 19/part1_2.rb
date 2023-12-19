@@ -1,10 +1,9 @@
 require 'json'
-require 'set'
 
 class Day19
   def initialize
     instructions, data = File.read('input.txt', chomp: true).split(/\n\n/)
-    @parts = data.split(/\n/).map { JSON.parse(_1.gsub(/([xmas])=/, '"\1": ')) }
+    @parts = data.each_line.map { JSON.parse(_1.gsub(/([xmas])=/, '"\1": ')) }
     @all_rules = parse_instructions(instructions)
   end
 
@@ -14,10 +13,10 @@ class Day19
       next_rules = 'in'
       until (%w(A R).include?(next_rules)) do
         rules = @all_rules[next_rules]
-        matched_rule = rules.keys.compact.find do |rule|
-          part[rule[:name]].send(rule[:operator], rule[:value])
+        condition = rules.keys.compact.find do |(name, operator, value)|
+          part[name].send(operator, value)
         end
-        next_rules = rules[matched_rule]
+        next_rules = rules[condition]
       end
 
       accepted << part if next_rules == 'A'
@@ -26,7 +25,7 @@ class Day19
   end
 
   def part2
-    accepted = Set.new
+    accepted = []
     queue = [{
       rule: 'in',
       x_min: 1, x_max: 4000,
@@ -38,26 +37,25 @@ class Day19
     while (current = queue.shift) do
       if %w(A R).include?(current[:rule])
         accepted << current if current[:rule] == 'A'
-      else
-        current_rules = @all_rules[current[:rule]]
-
-        current_rules.keys.each do |rule|
-          next_entry = current.dup
-          next_entry[:rule] = current_rules[rule]
-
-          if rule
-            variable_name = rule[:name].to_sym
-            if rule[:operator] == '>'
-              current[:"#{variable_name}_max"]    = rule[:value]
-              next_entry[:"#{variable_name}_min"] = rule[:value] + 1
-            else
-              current[:"#{variable_name}_min"]    = rule[:value]
-              next_entry[:"#{variable_name}_max"] = rule[:value] - 1
-            end
-          end
-          queue << next_entry
-        end
+        next
       end
+
+      @all_rules[current[:rule]].each do |(name, operator, value), next_rule|
+        next_entry = current.dup
+        next_entry[:rule] = next_rule
+
+        if name
+          if operator == '>'
+            current[:"#{name}_max"]    = value
+            next_entry[:"#{name}_min"] = value + 1
+          else
+            current[:"#{name}_min"]    = value
+            next_entry[:"#{name}_max"] = value - 1
+          end
+        end
+        queue << next_entry
+      end
+
     end
 
     accepted.sum do |entry|
@@ -66,20 +64,13 @@ class Day19
   end
 
   private
+    INSTRUCTION_REGEXP = /(?:([xmas])(<|>)(\d+):)?(\w+)/
     def parse_instructions(instructions)
-      instructions.split(/\n/).inject({}) do |all_rules, instruction|
+      instructions.each_line.inject({}) do |all_rules, instruction|
         name, details = instruction.gsub(/[\{\}]/, ' ').split
-        rules = details.split(',').each_with_object({}) do |rule, rules|
-          if rule.include?(':')
-            condition, next_rule = rule.split(':')
-
-            variable, operator, value = condition.split(/\b/)
-            key = { name: variable, operator: operator, value: value.to_i }
-
-            rules[key] = next_rule
-          else
-            rules[nil] = rule
-          end
+        rules = details.scan(INSTRUCTION_REGEXP).inject({}) do |rules, (variable, operator, value, next_rule)|
+          key = [variable, operator, value.to_i] if variable
+          rules.merge key => next_rule
         end
         all_rules.merge name => rules
       end

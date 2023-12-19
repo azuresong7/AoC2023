@@ -1,13 +1,13 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    algorithms (1.0.1)
+    priority_queue_cxx (0.3.6)
 
 PLATFORMS
   arm64-darwin-22
 
 DEPENDENCIES
-  algorithms
+  priority_queue_cxx
 
 BUNDLED WITH
    2.4.22

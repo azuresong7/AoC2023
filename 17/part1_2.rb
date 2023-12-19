@@ -1,5 +1,5 @@
 require 'set'
-require 'algorithms'
+require 'fc'
 
 N, E, S, W = -1i, 1+0i, 1i, -1+0i
 
@@ -17,7 +17,8 @@ def state_key(pos, dir, count)
 end
 
 def run(min_steps: 0, max_steps: 3)
-  queue = Containers::PriorityQueue.new { |x, y| (x <=> y) == -1 }
+  queue = FastContainers::PriorityQueue.new(:min)
+
   visited = Set.new()
 
   queue.push([0, START, E, 0], 0)
