@@ -27,7 +27,7 @@ def run(min_steps: 0, max_steps: 3)
   while (path = queue.pop) do
     loss, pos, dir, count = path
 
-    next_dirs = count >= min_steps ? [N, E, S, W] - [Complex(-dir.real, -dir.imag)] : [dir]
+    next_dirs = count >= min_steps ? [N, E, S, W] - [-dir] : [dir]
     next_dirs.delete(dir) if count == max_steps
 
     next_dirs.each do |next_dir|

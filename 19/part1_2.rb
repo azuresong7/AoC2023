@@ -2,24 +2,23 @@ require 'json'
 
 class Day19
   def initialize
-    instructions, data = File.read('input.txt', chomp: true).split(/\n\n/)
-    @parts = data.each_line.map { JSON.parse(_1.gsub(/([xmas])=/, '"\1": ')) }
-    @all_rules = parse_instructions(instructions)
+    workflows_string, parts_string = File.read('input.txt', chomp: true).split(/\n\n/)
+    @parts = parts_string.each_line.map { JSON.parse(_1.gsub(/([xmas])=/, '"\1": ')) }
+    @workflows = parse_workflows(workflows_string)
   end
 
   def part1
     accepted = []
     @parts.each do |part|
-      next_rules = 'in'
-      until (%w(A R).include?(next_rules)) do
-        rules = @all_rules[next_rules]
-        condition = rules.keys.compact.find do |(name, operator, value)|
+      workflow_name = 'in'
+      until (%w(A R).include?(workflow_name)) do
+        workflow = @workflows[workflow_name]
+        condition = workflow.keys.compact.find do |(name, operator, value)|
           part[name].send(operator, value)
         end
-        next_rules = rules[condition]
+        workflow_name = workflow[condition]
+        accepted << part if workflow_name == 'A'
       end
-
-      accepted << part if next_rules == 'A'
     end
     accepted.sum { _1.values.sum }
   end
@@ -27,7 +26,7 @@ class Day19
   def part2
     accepted = []
     queue = [{
-      rule: 'in',
+      workflow_name: 'in',
       x_min: 1, x_max: 4000,
       m_min: 1, m_max: 4000,
       a_min: 1, a_max: 4000,
@@ -35,24 +34,22 @@ class Day19
     }]
 
     while (current = queue.shift) do
-      if %w(A R).include?(current[:rule])
-        accepted << current if current[:rule] == 'A'
-        next
-      end
+      next if %w(A R).include?(current[:workflow_name])
 
-      @all_rules[current[:rule]].each do |(name, operator, value), next_rule|
+      @workflows[current[:workflow_name]].each do |(name, operator, value), next_workflow_name|
         next_entry = current.dup
-        next_entry[:rule] = next_rule
 
-        if name
-          if operator == '>'
-            current[:"#{name}_max"]    = value
-            next_entry[:"#{name}_min"] = value + 1
-          else
-            current[:"#{name}_min"]    = value
-            next_entry[:"#{name}_max"] = value - 1
-          end
+        if operator == '>'
+          current[:"#{name}_max"]    = value
+          next_entry[:"#{name}_min"] = value + 1
+        elsif operator == '<'
+          current[:"#{name}_min"]    = value
+          next_entry[:"#{name}_max"] = value - 1
         end
+
+        next_entry[:workflow_name] = next_workflow_name
+        accepted << next_entry if next_workflow_name == 'A'
+
         queue << next_entry
       end
 
@@ -64,15 +61,15 @@ class Day19
   end
 
   private
-    INSTRUCTION_REGEXP = /(?:([xmas])(<|>)(\d+):)?(\w+)/
-    def parse_instructions(instructions)
-      instructions.each_line.inject({}) do |all_rules, instruction|
+    WORKFLOW_REGEXP = /(?:([xmas])(<|>)(\d+):)?(\w+)/
+    def parse_workflows(workflows_string)
+      workflows_string.each_line.inject({}) do |workflows, instruction|
         name, details = instruction.gsub(/[\{\}]/, ' ').split
-        rules = details.scan(INSTRUCTION_REGEXP).inject({}) do |rules, (variable, operator, value, next_rule)|
-          key = [variable, operator, value.to_i] if variable
-          rules.merge key => next_rule
+        workflow = details.scan(WORKFLOW_REGEXP).inject({}) do |workflow, (name, operator, value, next_workflow_name)|
+          key = [name, operator, value.to_i] if name
+          workflow.merge key => next_workflow_name
         end
-        all_rules.merge name => rules
+        workflows.merge name => workflow
       end
     end
 end
