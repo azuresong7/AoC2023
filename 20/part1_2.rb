@@ -24,17 +24,17 @@ class Day20
     end
   end
 
-  def button_press(signal_counts = nil)
+  def button_press(signals_sent = nil)
     queue = [ ['broadcaster', LOW] ]
 
-    signal_counts ||= Hash.new { _1[_2] = [0, 0] }
-    signal_counts['broadcaster'][LOW] += 1
+    signals_sent ||= Array.new(2) { [] }
+    signals_sent[LOW] << 'broadcaster'
 
     until queue.empty? do
       current_module, current_signal = queue.shift
 
       graph[current_module].each do |next_module|
-        signal_counts[next_module][current_signal] += 1
+        signals_sent[current_signal] << next_module
 
         next_signal = if flipflops.key?(next_module) && current_signal == LOW
           (flipflops[next_module] ^= ON) ? HIGH : LOW
@@ -47,15 +47,15 @@ class Day20
       end
     end
 
-    signal_counts
+    signals_sent
   end
 
   def part1
     reset
-    signal_counts = 1000.times.inject(nil) do |signal_counts, _|
-      button_press(signal_counts)
+    signals_sent = 1000.times.inject(nil) do |signals_sent, _|
+      button_press(signals_sent)
     end
-    p signal_counts.values.map(&:first).sum * signal_counts.values.map(&:last).sum
+    p signals_sent[0].size * signals_sent[1].size
   end
 
   def part2
@@ -65,10 +65,10 @@ class Day20
     press_required = 1
 
     (1..).find do |press|
-      signal_counts = button_press
+      signals_sent = button_press
 
       modules_to_check.each do |module_name|
-        next unless signal_counts[module_name][LOW] > 0
+        next unless signals_sent[LOW].include?(module_name)
         press_required = press_required.lcm(press)
         modules_to_check.delete(module_name)
       end
