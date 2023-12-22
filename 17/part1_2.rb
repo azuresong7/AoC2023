@@ -34,7 +34,7 @@ def run(min_steps: 0, max_steps: 3)
       next_pos = pos + next_dir
       next_count = next_dir == dir ? count + 1 : 1
 
-      next unless @data.key?(next_pos) && !visited.include?(state_key(next_pos, next_dir, next_count))
+      next if visited === state_key(next_pos, next_dir, next_count) || !@data.key?(next_pos)
 
       next_loss = loss + @data[next_pos]
 

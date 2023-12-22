@@ -61,7 +61,7 @@ class Day10
     end_points = [@starting_position]
     loop do
       end_points = end_points.flat_map do |end_point|
-        next_tiles = get_next_tiles(*end_point).reject { |tile| @loop_tiles.include?(tile) }
+        next_tiles = get_next_tiles(*end_point).reject { |tile| @loop_tiles === tile }
         return if next_tiles.empty?
         @loop_tiles.merge(next_tiles)
         next_tiles
@@ -91,23 +91,6 @@ class Day10
 
     p @enclosed_tiles.count
   end
-
-  def to_graph
-    output_mapping = {
-      '.' => ' ', '|' => '│', '-' => '─',
-      'F' => '┌', '7' => '┐',
-      'L' => '└', 'J' => '┘',
-    }
-
-    @map.each_with_index do |row, y|
-      row.each_with_index do |col, x|
-        tile = @loop_tiles.include?([y, x]) ? output_mapping[@map[y][x]] : ' '
-        print @enclosed_tiles.include?([y, x]) ? "\e[103m#{tile}\e[0m" : tile
-      end
-      puts
-    end
-  end
-
 end
 
 day10 = Day10.new

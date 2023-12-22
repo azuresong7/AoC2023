@@ -16,7 +16,7 @@ def run(starting_position)
     current_position, direction = beams.shift
     next_position = current_position + direction
 
-    next unless @data.key?(next_position) && !visited.include?([next_position, direction])
+    next if visited === [next_position, direction] || !@data.key?(next_position)
 
     visited << [next_position, direction]
 

@@ -1,8 +1,6 @@
 require 'set'
 
-N, E, S, W = -1i, 1+0i, 1i, -1+0i
-
- @data = File.readlines('input.txt', chomp: true).each_with_object({}).with_index do |(row, data), y|
+@data = File.readlines('input.txt', chomp: true).each_with_object({}).with_index do |(row, data), y|
       row.chars.each_with_index do |cell, x|
     coord = x + y * 1i
     @start = coord if cell == 'S'
@@ -23,9 +21,9 @@ results = {}
 (REMAINDER + WIDTH).times do |steps|
   new_queue = Set.new
   queue.each do |pos|
-    [N, E, S, W].each do |dir|
-      new_pos = pos + dir
-      if @data.key?(Complex(new_pos.real % WIDTH, new_pos.imag % HEIGHT)) && !visited.include?(new_pos)
+    4.times do
+      new_pos = pos + 1i ** _1
+      unless visited === new_pos || !@data.key?(Complex(new_pos.real % WIDTH, new_pos.imag % HEIGHT))
         new_queue << new_pos
       end
     end
