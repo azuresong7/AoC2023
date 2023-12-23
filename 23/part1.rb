@@ -1,70 +1,89 @@
+require 'byebug'
 require 'set'
 
-@data = File.readlines('input.txt', chomp: true).each_with_object({}).with_index do |(row, data), y|
-  row.chars.each_with_index do |cell, x|
-    data[x + y * 1i] = cell
+class Grid
+  attr_reader :start, :finish
+
+  def initialize
+    @grid = File.readlines('input.txt', chomp: true).each_with_object({}).with_index do |(row, grid), y|
+      row.chars.each_with_index do |cell, x|
+        grid[x + y * 1i] = cell
+      end
+    end.freeze
+    @start = Complex(1, 0)
+    @finish = @grid.keys.last - 1
   end
-end.freeze
 
-START = Complex(1, 0)
-FINISH = @data.keys.last - 1
+  def graph(include_slopes: true)
+    new_graph = Hash.new { _1[_2] = Hash.new(0) }
 
-DIRECTION_TILES = Hash[%w(> v < ^).each_with_index.to_a].freeze
+    queue = [[0, start, nil, start]]
+    until queue.empty? do
+      distance, node_to_add, prev_pos, pos = queue.pop
 
-def build_graph(grid, include_slopes:)
-  grid.each_with_object({}) do |(pos, tile), graph|
-    next if tile == '#'
-    neighbours = []
-    if DIRECTION_TILES[tile] && include_slopes
-      neighbours << pos + 1i ** DIRECTION_TILES[tile]
-    else
-      4.times do
-        neighbour = pos + 1i ** _1
-        neighbours << neighbour unless @data.fetch(neighbour, '#') == '#'
+      neighbours = neighbours_for(pos, include_slopes)
+
+      if new_graph.key?(pos) || pos == finish
+        new_graph[node_to_add][pos] = distance
+      elsif neighbours.size > 2
+        new_graph[node_to_add][pos] = distance
+        neighbours.each { queue << [1, pos, pos, _1] }
+      elsif (next_pos = (neighbours - [prev_pos])[0])
+        queue << [distance + 1, node_to_add, pos, next_pos]
       end
     end
-    graph[pos] = neighbours
+
+    new_graph
   end
-end
 
+  private
+    DIRECTION_TILES = Hash[%w(> v < ^).each_with_index.to_a].freeze
 
-def compress_graph
-  new_graph = Hash.new { _1[_2] = Hash.new(0) }
-  graph = build_graph(@data, include_slopes: false)
-  queue = [[0, START, nil, START]]
-  until queue.empty? do
-    steps, node_to_add, prev_pos, pos = queue.pop
-    neighbours = graph[pos]
+    def neighbours_for(pos, include_slopes)
+      tile = @grid[pos]
 
-    if new_graph.key?(pos) || pos == FINISH
-      new_graph[node_to_add][pos] = steps
-    elsif neighbours.size > 2
-      new_graph[node_to_add][pos] = steps
-      neighbours.each { queue << [1, pos, pos, _1] }
-    else
-      queue << [steps + 1, node_to_add, pos, (neighbours - [prev_pos])[0]]
+      if DIRECTION_TILES[tile] && include_slopes
+        [pos + 1i ** DIRECTION_TILES[tile]]
+      else
+        4.times.map do
+          neighbour = pos + 1i ** _1
+          neighbour unless @grid.fetch(neighbour, '#') == '#'
+        end.compact
+      end
     end
-  end
-
-  new_graph
 end
 
-@compress_graph = compress_graph
-
-@steps = []
-def dfs(pos, visited, steps)
-  if pos == FINISH
-    @steps << steps
-    return
+class Day23
+  def initialize
+    @grid = Grid.new
   end
 
-  neighbours = @compress_graph[pos]
-
-  neighbours.each do |neighbour, length|
-    next if visited === neighbour
-    dfs(neighbour, visited.dup.add(pos), steps + length)
+  def part1
+    results = []
+    dfs(@grid.start, Set.new, 0, @grid.graph, results)
+    results.max
   end
+
+  def part2
+    results = []
+    dfs(@grid.start, Set.new, 0, @grid.graph(include_slopes: false), results)
+    results.max
+  end
+
+  private
+    def dfs(pos, visited, total_distance, graph, results)
+      if pos == @grid.finish
+        results << total_distance
+        return
+      end
+
+      graph[pos].each do |neighbour, distance|
+        next if visited === neighbour
+        dfs(neighbour, visited.dup.add(pos), total_distance + distance, graph, results)
+      end
+    end
 end
 
-dfs(START, Set.new, 0)
-p @steps.max
+day23 = Day23.new
+puts day23.part1
+puts day23.part2
