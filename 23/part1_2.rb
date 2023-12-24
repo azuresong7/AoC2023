@@ -76,11 +76,12 @@ class Day23
         results << total_distance
         return
       end
-
+      visited.add(pos)
       graph[pos].each do |neighbour, distance|
         next if visited === neighbour
-        dfs(neighbour, visited.dup.add(pos), total_distance + distance, graph, results)
+        dfs(neighbour, visited, total_distance + distance, graph, results)
       end
+      visited.delete(pos)
     end
 end
 
